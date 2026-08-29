@@ -158,4 +158,19 @@ export function seedDatabase() {
   console.log("✅ Seed completed successfully! 15 questions ready.");
 }
 
-seedDatabase();
+export function autoSeedIfEmpty() {
+  try {
+    const row = db.prepare("SELECT COUNT(*) as count FROM questions").get();
+    if (!row || row.count === 0) {
+      console.log("ℹ️ Questions table is empty. Auto-seeding initial 15 questions...");
+      seedDatabase();
+    }
+  } catch (err) {
+    console.error("Error auto-seeding database:", err);
+  }
+}
+
+// Run direct script execution check
+if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
+  seedDatabase();
+}

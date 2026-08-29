@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from './db.js';
+import { autoSeedIfEmpty } from './seed.js';
 
 dotenv.config();
 
@@ -371,5 +372,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
+  autoSeedIfEmpty();
   console.log(`🚀 ChronoQuiz Backend Server listening on http://localhost:${PORT}`);
 });
