@@ -371,7 +371,12 @@ app.get('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  autoSeedIfEmpty();
-  console.log(`🚀 ChronoQuiz Backend Server listening on http://localhost:${PORT}`);
-});
+autoSeedIfEmpty();
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 ChronoQuiz Backend Server listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

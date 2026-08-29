@@ -5,7 +5,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, 'quiz_database.db');
+const isVercel = Boolean(process.env.VERCEL);
+const dbPath = isVercel
+  ? path.join('/tmp', 'quiz_database.db')
+  : path.join(__dirname, 'quiz_database.db');
+
 const db = new DatabaseSync(dbPath);
 
 // Enable foreign keys
