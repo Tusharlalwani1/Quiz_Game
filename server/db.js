@@ -26,7 +26,8 @@ export function initDB() {
       option_c TEXT NOT NULL,
       option_d TEXT NOT NULL,
       correct_option TEXT NOT NULL,
-      question_order INTEGER NOT NULL UNIQUE
+      question_order INTEGER NOT NULL,
+      image_url TEXT
     );
 
     CREATE TABLE IF NOT EXISTS attempts (
@@ -49,9 +50,15 @@ export function initDB() {
       answered_at TEXT NOT NULL,
       time_taken_seconds REAL DEFAULT 0,
       FOREIGN KEY (attempt_id) REFERENCES attempts(id) ON DELETE CASCADE,
-      FOREIGN KEY (question_id) REFERENCES questions(id)
+      FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
     );
   `);
+
+  try {
+    db.exec(`ALTER TABLE questions ADD COLUMN image_url TEXT;`);
+  } catch (err) {
+    // Column already exists
+  }
 }
 
 initDB();

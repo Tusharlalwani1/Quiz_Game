@@ -23,7 +23,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminSecret2026';
 const JWT_SECRET = process.env.JWT_SECRET || 'super_jwt_secret_quiz_app_2026';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // --- ADMIN JWT MIDDLEWARE ---
 function authenticateAdmin(req, res, next) {
@@ -51,12 +52,8 @@ function authenticateAdmin(req, res, next) {
 app.post('/api/quiz/login', (req, res) => {
   const { username, password, participantName } = req.body;
 
-  if (!username || !password || !participantName) {
-    return res.status(400).json({ error: 'Username, password, and Your Name are required.' });
-  }
-
-  if (username.trim() !== QUIZ_USERNAME || password.trim() !== QUIZ_PASSWORD) {
-    return res.status(401).json({ error: 'Invalid username or password.' });
+  if (!username.trim() || !password.trim() || !participantName.trim()) {
+    return res.status(400).json({ error: 'Username, password, and Your Display Name are required.' });
   }
 
   const cleanName = participantName.trim();
@@ -118,9 +115,9 @@ app.get('/api/quiz/session/:sessionId', (req, res) => {
 app.get('/api/quiz/questions', (req, res) => {
   try {
     const questions = db.prepare(`
-      SELECT id, text, option_a, option_b, option_c, option_d, question_order
+      SELECT id, text, option_a, option_b, option_c, option_d, question_order, image_url
       FROM questions
-      ORDER BY question_order ASC
+      ORDER BY question_order ASC, id ASC
     `).all();
 
     const formatted = questions.map(q => ({
@@ -132,7 +129,8 @@ app.get('/api/quiz/questions', (req, res) => {
         C: q.option_c,
         D: q.option_d
       },
-      order: q.question_order
+      order: q.question_order,
+      image_url: q.image_url || null
     }));
 
     res.json({ questions: formatted });
@@ -273,6 +271,138 @@ app.post('/api/admin/login', (req, res) => {
   );
 
   res.json({ success: true, token });
+});
+
+// --- ADMIN QUESTIONS CRUD ---
+
+// Get all questions
+app.get('/api/admin/questions', authenticateAdmin, (req, res) => {
+  try {
+    const questions = db.prepare(`
+      SELECT id, text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url
+      FROM questions
+      ORDER BY question_order ASC, id ASC
+    `).all();
+
+    res.json({ questions });
+  } catch (err) {
+    console.error('Error fetching admin questions:', err);
+    res.status(500).json({ error: 'Failed to fetch questions.' });
+  }
+});
+
+// Create Question
+app.post('/api/admin/questions', authenticateAdmin, (req, res) => {
+  const { text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url } = req.body;
+
+  if (!text || !option_a || !option_b || !option_c || !option_d || !correct_option) {
+    return res.status(400).json({ error: 'Question text, all 4 options, and correct answer are required.' });
+  }
+
+  const validOptions = ['A', 'B', 'C', 'D'];
+  const cleanCorrect = (correct_option || '').toUpperCase().trim();
+  if (!validOptions.includes(cleanCorrect)) {
+    return res.status(400).json({ error: 'Correct option must be A, B, C, or D.' });
+  }
+
+  try {
+    let order = parseInt(question_order, 10);
+    if (isNaN(order)) {
+      const maxRow = db.prepare('SELECT MAX(question_order) as maxOrder FROM questions').get();
+      order = ((maxRow && maxRow.maxOrder) || 0) + 1;
+    }
+
+    const stmt = db.prepare(`
+      INSERT INTO questions (text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+      text.trim(),
+      option_a.trim(),
+      option_b.trim(),
+      option_c.trim(),
+      option_d.trim(),
+      cleanCorrect,
+      order,
+      image_url ? image_url.trim() : null
+    );
+
+    const created = db.prepare('SELECT * FROM questions WHERE id = ?').get(result.lastInsertRowid);
+    res.json({ success: true, question: created });
+  } catch (err) {
+    console.error('Error creating question:', err);
+    res.status(500).json({ error: 'Failed to add new question.' });
+  }
+});
+
+// Update Question
+app.put('/api/admin/questions/:id', authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const { text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url } = req.body;
+
+  if (!text || !option_a || !option_b || !option_c || !option_d || !correct_option) {
+    return res.status(400).json({ error: 'Question text, all 4 options, and correct answer are required.' });
+  }
+
+  const validOptions = ['A', 'B', 'C', 'D'];
+  const cleanCorrect = (correct_option || '').toUpperCase().trim();
+  if (!validOptions.includes(cleanCorrect)) {
+    return res.status(400).json({ error: 'Correct option must be A, B, C, or D.' });
+  }
+
+  try {
+    const existing = db.prepare('SELECT id FROM questions WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Question not found.' });
+    }
+
+    let order = parseInt(question_order, 10);
+    if (isNaN(order)) order = 1;
+
+    const stmt = db.prepare(`
+      UPDATE questions
+      SET text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_option = ?, question_order = ?, image_url = ?
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      text.trim(),
+      option_a.trim(),
+      option_b.trim(),
+      option_c.trim(),
+      option_d.trim(),
+      cleanCorrect,
+      order,
+      image_url ? image_url.trim() : null,
+      id
+    );
+
+    const updated = db.prepare('SELECT * FROM questions WHERE id = ?').get(id);
+    res.json({ success: true, question: updated });
+  } catch (err) {
+    console.error('Error updating question:', err);
+    res.status(500).json({ error: 'Failed to update question.' });
+  }
+});
+
+// Delete Question
+app.delete('/api/admin/questions/:id', authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  try {
+    const existing = db.prepare('SELECT id FROM questions WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Question not found.' });
+    }
+
+    db.prepare('DELETE FROM answers WHERE question_id = ?').run(id);
+    db.prepare('DELETE FROM questions WHERE id = ?').run(id);
+
+    res.json({ success: true, deletedId: id });
+  } catch (err) {
+    console.error('Error deleting question:', err);
+    res.status(500).json({ error: 'Failed to remove question.' });
+  }
 });
 
 // Admin Get All Quiz Attempts & Details

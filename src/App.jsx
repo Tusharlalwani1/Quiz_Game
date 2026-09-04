@@ -15,16 +15,21 @@ export default function App() {
     <AuthProvider>
       <SoundProvider>
         <Router>
-          <div className="min-h-screen flex flex-col bg-cyber-dark text-slate-100 selection:bg-indigo-500 selection:text-white">
+          <div className="min-h-screen flex flex-col bg-mesh-dark text-slate-100 font-sans selection:bg-fuchsia-500 selection:text-white relative overflow-hidden">
+            {/* Ambient Background Glow Blobs */}
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[140px] pointer-events-none animate-pulse-glow" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-fuchsia-600/20 rounded-full blur-[140px] pointer-events-none animate-pulse-glow" style={{ animationDelay: '3s' }} />
+            <div className="absolute top-[40%] right-[20%] w-[350px] h-[350px] bg-cyan-500/15 rounded-full blur-[120px] pointer-events-none" />
+
             <Header />
-            <main className="flex-1">
+            <main className="flex-1 relative z-10">
               <Routes>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/instructions" element={<InstructionsPage />} />
                 <Route path="/quiz" element={<QuizPage />} />
                 <Route path="/complete" element={<CompletionPage />} />
-                
-                {/* Hidden Admin Routes */}
+
+                {/* Admin Routes */}
                 <Route path="/admin" element={<AdminLoginPage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
