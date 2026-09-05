@@ -1,14 +1,16 @@
-import { DatabaseSync } from 'node:sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { DatabaseSync } from "node:sqlite";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isVercel = Boolean(process.env.VERCEL);
-const dbPath = isVercel
-  ? path.join('/tmp', 'quiz_database.db')
-  : path.join(__dirname, 'quiz_database.db');
+const dbPath =
+  process.env.DATABASE_PATH ||
+  (isVercel
+    ? path.join("/tmp", "quiz_database.db")
+    : path.join(__dirname, "quiz_database.db"));
 
 const db = new DatabaseSync(dbPath);
 

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { fileURLToPath } from "url";
 import db from "./db.js";
+import { autoSeedIfEmpty } from "./seed.js";
 
 dotenv.config();
 
@@ -74,20 +75,16 @@ app.post("/api/quiz/login", (req, res) => {
   const { username, password, participantName } = req.body;
 
   if (!username.trim() || !password.trim() || !participantName.trim()) {
-    return res
-      .status(400)
-      .json({
-        error: "Username, password, and Your Display Name are required.",
-      });
+    return res.status(400).json({
+      error: "Username, password, and Your Display Name are required.",
+    });
   }
 
   const cleanName = participantName.trim();
   if (cleanName.length < 2) {
-    return res
-      .status(400)
-      .json({
-        error: "Please enter a valid display name (at least 2 characters).",
-      });
+    return res.status(400).json({
+      error: "Please enter a valid display name (at least 2 characters).",
+    });
   }
 
   const attemptId = uuidv4();
@@ -411,11 +408,9 @@ app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
     !option_d ||
     !correct_option
   ) {
-    return res
-      .status(400)
-      .json({
-        error: "Question text, all 4 options, and correct answer are required.",
-      });
+    return res.status(400).json({
+      error: "Question text, all 4 options, and correct answer are required.",
+    });
   }
 
   const validOptions = ["A", "B", "C", "D"];
@@ -491,11 +486,9 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
     !option_d ||
     !correct_option
   ) {
-    return res
-      .status(400)
-      .json({
-        error: "Question text, all 4 options, and correct answer are required.",
-      });
+    return res.status(400).json({
+      error: "Question text, all 4 options, and correct answer are required.",
+    });
   }
 
   const validOptions = ["A", "B", "C", "D"];
@@ -519,22 +512,18 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
       .prepare("SELECT COUNT(*) as count FROM questions")
       .get().count;
     if (!Number.isInteger(order) || order < 1 || order > questionCount) {
-      return res
-        .status(400)
-        .json({
-          error: `Order number must be between 1 and ${questionCount}.`,
-        });
+      return res.status(400).json({
+        error: `Order number must be between 1 and ${questionCount}.`,
+      });
     }
 
     const duplicate = db
       .prepare("SELECT id FROM questions WHERE question_order = ? AND id != ?")
       .get(order, id);
     if (duplicate) {
-      return res
-        .status(400)
-        .json({
-          error: `Order number ${order} is already assigned to another question.`,
-        });
+      return res.status(400).json({
+        error: `Order number ${order} is already assigned to another question.`,
+      });
     }
 
     const stmt = db.prepare(`
@@ -697,6 +686,7 @@ app.get("*", (req, res) => {
 });
 
 normalizeQuestionOrders();
+autoSeedIfEmpty();
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
