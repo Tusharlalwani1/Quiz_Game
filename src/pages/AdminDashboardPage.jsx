@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   Trophy,
@@ -30,26 +30,26 @@ import {
   Layers,
   CheckCircle2,
   Flame,
-  Zap
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useSound } from '../context/SoundContext';
-import { exportAttemptsToCSV } from '../utils/csvExport';
+  Zap,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useSound } from "../context/SoundContext";
+import { exportAttemptsToCSV } from "../utils/csvExport";
 
 // Sample visual presets for quick testing
 const SAMPLE_PRESET_IMAGES = [
   {
-    name: 'Data Flow Diagram',
-    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80'
+    name: "Data Flow Diagram",
+    url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
   },
   {
-    name: 'Code Snippet Syntax',
-    url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80'
+    name: "Code Snippet Syntax",
+    url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
   },
   {
-    name: 'Logic Circuit Board',
-    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
-  }
+    name: "Logic Circuit Board",
+    url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+  },
 ];
 
 export default function AdminDashboardPage() {
@@ -58,45 +58,45 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
 
   // Active Tab: 'attempts' or 'questions'
-  const [activeTab, setActiveTab] = useState('attempts');
+  const [activeTab, setActiveTab] = useState("attempts");
 
   // Attempts State
   const [attempts, setAttempts] = useState([]);
   const [loadingAttempts, setLoadingAttempts] = useState(true);
-  const [attemptsError, setAttemptsError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [attemptsError, setAttemptsError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [expandedAttemptId, setExpandedAttemptId] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
 
   // Questions State
   const [questions, setQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
-  const [questionsError, setQuestionsError] = useState('');
-  const [qSearchTerm, setQSearchTerm] = useState('');
+  const [questionsError, setQuestionsError] = useState("");
+  const [qSearchTerm, setQSearchTerm] = useState("");
 
   // Question Form Modal State (Add or Edit)
   const [modalOpen, setModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [formData, setFormData] = useState({
-    text: '',
-    option_a: '',
-    option_b: '',
-    option_c: '',
-    option_d: '',
-    correct_option: 'A',
+    text: "",
+    option_a: "",
+    option_b: "",
+    option_c: "",
+    option_d: "",
+    correct_option: "A",
     question_order: 1,
-    image_url: ''
+    image_url: "",
   });
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
-  const [imageMode, setImageMode] = useState('file'); // 'file' | 'url' | 'preset'
+  const [imageMode, setImageMode] = useState("file"); // 'file' | 'url' | 'preset'
   const [previewZoomImage, setPreviewZoomImage] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!isAdminLoggedIn) {
-      navigate('/admin');
+      navigate("/admin");
       return;
     }
     fetchAttempts();
@@ -107,24 +107,24 @@ export default function AdminDashboardPage() {
   const fetchAttempts = async () => {
     try {
       setLoadingAttempts(true);
-      setAttemptsError('');
-      const res = await fetch('/api/admin/attempts', {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      setAttemptsError("");
+      const res = await fetch("/api/admin/attempts", {
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           logoutAdmin();
-          navigate('/admin');
+          navigate("/admin");
           return;
         }
-        throw new Error(data.error || 'Failed to fetch assessment records.');
+        throw new Error(data.error || "Failed to fetch assessment records.");
       }
       setAttempts(data.attempts || []);
       setLoadingAttempts(false);
     } catch (err) {
       console.error(err);
-      setAttemptsError(err.message || 'Error loading candidate attempts.');
+      setAttemptsError(err.message || "Error loading candidate attempts.");
       setLoadingAttempts(false);
     }
   };
@@ -133,36 +133,39 @@ export default function AdminDashboardPage() {
   const fetchQuestions = async () => {
     try {
       setLoadingQuestions(true);
-      setQuestionsError('');
-      const res = await fetch('/api/admin/questions', {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      setQuestionsError("");
+      const res = await fetch("/api/admin/questions", {
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           logoutAdmin();
-          navigate('/admin');
+          navigate("/admin");
           return;
         }
-        throw new Error(data.error || 'Failed to fetch question bank.');
+        throw new Error(data.error || "Failed to fetch question bank.");
       }
       setQuestions(data.questions || []);
       setLoadingQuestions(false);
     } catch (err) {
       console.error(err);
-      setQuestionsError(err.message || 'Error loading question list.');
+      setQuestionsError(err.message || "Error loading question list.");
       setLoadingQuestions(false);
     }
   };
 
   // Delete Attempt
   const handleDeleteAttempt = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this candidate record?')) return;
+    if (
+      !window.confirm("Are you sure you want to remove this candidate record?")
+    )
+      return;
     playClick();
     try {
       const res = await fetch(`/api/admin/attempts/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${adminToken}` }
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
       if (res.ok) {
         setAttempts((prev) => prev.filter((a) => a.id !== id));
@@ -176,9 +179,9 @@ export default function AdminDashboardPage() {
   const handleClearAllAttempts = async () => {
     playClick();
     try {
-      const res = await fetch('/api/admin/attempts-all', {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const res = await fetch("/api/admin/attempts-all", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
       if (res.ok) {
         setAttempts([]);
@@ -192,19 +195,19 @@ export default function AdminDashboardPage() {
   // Open Modal for Add
   const handleOpenAddModal = () => {
     playClick();
-    const nextOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.question_order || 0)) + 1 : 1;
+    const nextOrder = questions.length + 1;
     setEditingQuestion(null);
     setFormData({
-      text: '',
-      option_a: '',
-      option_b: '',
-      option_c: '',
-      option_d: '',
-      correct_option: 'A',
+      text: "",
+      option_a: "",
+      option_b: "",
+      option_c: "",
+      option_d: "",
+      correct_option: "A",
       question_order: nextOrder,
-      image_url: ''
+      image_url: "",
     });
-    setFormError('');
+    setFormError("");
     setModalOpen(true);
   };
 
@@ -213,16 +216,16 @@ export default function AdminDashboardPage() {
     playClick();
     setEditingQuestion(q);
     setFormData({
-      text: q.text || '',
-      option_a: q.option_a || '',
-      option_b: q.option_b || '',
-      option_c: q.option_c || '',
-      option_d: q.option_d || '',
-      correct_option: (q.correct_option || 'A').toUpperCase(),
+      text: q.text || "",
+      option_a: q.option_a || "",
+      option_b: q.option_b || "",
+      option_c: q.option_c || "",
+      option_d: q.option_d || "",
+      correct_option: (q.correct_option || "A").toUpperCase(),
       question_order: q.question_order || 1,
-      image_url: q.image_url || ''
+      image_url: q.image_url || "",
     });
-    setFormError('');
+    setFormError("");
     setModalOpen(true);
   };
 
@@ -232,17 +235,22 @@ export default function AdminDashboardPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setFormError('Image size exceeds 5MB limit. Please choose a smaller image.');
+      setFormError(
+        "Image size exceeds 5MB limit. Please choose a smaller image.",
+      );
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
-      setFormData((prev) => ({ ...prev, image_url: uploadEvent.target.result }));
-      setFormError('');
+      setFormData((prev) => ({
+        ...prev,
+        image_url: uploadEvent.target.result,
+      }));
+      setFormError("");
     };
     reader.onerror = () => {
-      setFormError('Failed to read image file.');
+      setFormError("Failed to read image file.");
     };
     reader.readAsDataURL(file);
   };
@@ -250,32 +258,40 @@ export default function AdminDashboardPage() {
   // Save Question (Create or Edit)
   const handleSaveQuestion = async (e) => {
     e.preventDefault();
-    if (!formData.text.trim() || !formData.option_a.trim() || !formData.option_b.trim() || !formData.option_c.trim() || !formData.option_d.trim()) {
-      setFormError('Question text and all 4 options are required.');
+    if (
+      !formData.text.trim() ||
+      !formData.option_a.trim() ||
+      !formData.option_b.trim() ||
+      !formData.option_c.trim() ||
+      !formData.option_d.trim()
+    ) {
+      setFormError("Question text and all 4 options are required.");
       return;
     }
 
     setIsSavingQuestion(true);
-    setFormError('');
+    setFormError("");
     playClick();
 
     const isEdit = Boolean(editingQuestion);
-    const endpoint = isEdit ? `/api/admin/questions/${editingQuestion.id}` : '/api/admin/questions';
-    const method = isEdit ? 'PUT' : 'POST';
+    const endpoint = isEdit
+      ? `/api/admin/questions/${editingQuestion.id}`
+      : "/api/admin/questions";
+    const method = isEdit ? "PUT" : "POST";
 
     try {
       const res = await fetch(endpoint, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${adminToken}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to save question.');
+        throw new Error(data.error || "Failed to save question.");
       }
 
       playSelect();
@@ -283,7 +299,7 @@ export default function AdminDashboardPage() {
       setModalOpen(false);
     } catch (err) {
       console.error(err);
-      setFormError(err.message || 'Error saving question.');
+      setFormError(err.message || "Error saving question.");
     } finally {
       setIsSavingQuestion(false);
     }
@@ -291,19 +307,24 @@ export default function AdminDashboardPage() {
 
   // Delete Question
   const handleDeleteQuestion = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this question? Existing test logs for this question will also be updated.')) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this question? Existing test logs for this question will also be updated.",
+      )
+    )
+      return;
     playClick();
 
     try {
       const res = await fetch(`/api/admin/questions/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${adminToken}` }
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
       if (res.ok) {
-        setQuestions((prev) => prev.filter((q) => q.id !== id));
+        await fetchQuestions();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete question.');
+        alert(data.error || "Failed to delete question.");
       }
     } catch (err) {
       console.error(err);
@@ -312,14 +333,27 @@ export default function AdminDashboardPage() {
 
   // KPI Calculations
   const totalAttempts = attempts.length;
-  const completedAttempts = attempts.filter((a) => a.status === 'completed').length;
+  const completedAttempts = attempts.filter(
+    (a) => a.status === "completed",
+  ).length;
   const totalQuestionCount = questions.length;
-  const avgScore = completedAttempts > 0
-    ? (attempts.filter((a) => a.status === 'completed').reduce((acc, a) => acc + a.total_score, 0) / completedAttempts).toFixed(1)
-    : '0';
-  const avgTimeSeconds = completedAttempts > 0
-    ? Math.round(attempts.filter((a) => a.status === 'completed').reduce((acc, a) => acc + (a.durationSeconds || 0), 0) / completedAttempts)
-    : 0;
+  const avgScore =
+    completedAttempts > 0
+      ? (
+          attempts
+            .filter((a) => a.status === "completed")
+            .reduce((acc, a) => acc + a.total_score, 0) / completedAttempts
+        ).toFixed(1)
+      : "0";
+  const avgTimeSeconds =
+    completedAttempts > 0
+      ? Math.round(
+          attempts
+            .filter((a) => a.status === "completed")
+            .reduce((acc, a) => acc + (a.durationSeconds || 0), 0) /
+            completedAttempts,
+        )
+      : 0;
 
   const formatDuration = (secs) => {
     const m = Math.floor(secs / 60);
@@ -329,22 +363,27 @@ export default function AdminDashboardPage() {
 
   // Filtered Attempts
   const filteredAttempts = attempts
-    .filter((a) => a.participant_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((a) =>
+      a.participant_name.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
     .sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.started_at) - new Date(a.started_at);
-      if (sortBy === 'score_desc') return b.total_score - a.total_score;
-      if (sortBy === 'score_asc') return a.total_score - b.total_score;
-      if (sortBy === 'time_desc') return (b.durationSeconds || 0) - (a.durationSeconds || 0);
+      if (sortBy === "newest")
+        return new Date(b.started_at) - new Date(a.started_at);
+      if (sortBy === "score_desc") return b.total_score - a.total_score;
+      if (sortBy === "score_asc") return a.total_score - b.total_score;
+      if (sortBy === "time_desc")
+        return (b.durationSeconds || 0) - (a.durationSeconds || 0);
       return 0;
     });
 
   // Filtered Questions
-  const filteredQuestions = questions.filter((q) =>
-    q.text.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
-    q.option_a.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
-    q.option_b.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
-    q.option_c.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
-    q.option_d.toLowerCase().includes(qSearchTerm.toLowerCase())
+  const filteredQuestions = questions.filter(
+    (q) =>
+      q.text.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
+      q.option_a.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
+      q.option_b.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
+      q.option_c.toLowerCase().includes(qSearchTerm.toLowerCase()) ||
+      q.option_d.toLowerCase().includes(qSearchTerm.toLowerCase()),
   );
 
   return (
@@ -360,7 +399,8 @@ export default function AdminDashboardPage() {
               <Zap className="w-3.5 h-3.5 fill-cyan-400" /> ADMIN CONTROL CENTER
             </div>
             <h1 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              Apex Quiz <span className="gradient-text-fun">Management Hub</span>
+              Apex Quiz{" "}
+              <span className="gradient-text-fun">Management Hub</span>
             </h1>
           </div>
         </div>
@@ -379,7 +419,7 @@ export default function AdminDashboardPage() {
             <span>Refresh</span>
           </button>
 
-          {activeTab === 'attempts' && (
+          {activeTab === "attempts" && (
             <>
               <button
                 onClick={() => {
@@ -408,7 +448,7 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {activeTab === 'questions' && (
+          {activeTab === "questions" && (
             <button
               onClick={handleOpenAddModal}
               className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-black flex items-center gap-2 transition shadow-lg shadow-emerald-500/30 cursor-pointer"
@@ -425,12 +465,12 @@ export default function AdminDashboardPage() {
         <button
           onClick={() => {
             playClick();
-            setActiveTab('attempts');
+            setActiveTab("attempts");
           }}
           className={`px-5 py-3 rounded-2xl text-xs font-black flex items-center gap-2.5 transition cursor-pointer ${
-            activeTab === 'attempts'
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'bg-slate-900/60 text-slate-300 hover:bg-slate-900 border border-white/10'
+            activeTab === "attempts"
+              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30"
+              : "bg-slate-900/60 text-slate-300 hover:bg-slate-900 border border-white/10"
           }`}
         >
           <BarChart2 className="w-4 h-4 text-cyan-400" />
@@ -440,12 +480,12 @@ export default function AdminDashboardPage() {
         <button
           onClick={() => {
             playClick();
-            setActiveTab('questions');
+            setActiveTab("questions");
           }}
           className={`px-5 py-3 rounded-2xl text-xs font-black flex items-center gap-2.5 transition cursor-pointer ${
-            activeTab === 'questions'
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'bg-slate-900/60 text-slate-300 hover:bg-slate-900 border border-white/10'
+            activeTab === "questions"
+              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30"
+              : "bg-slate-900/60 text-slate-300 hover:bg-slate-900 border border-white/10"
           }`}
         >
           <FileQuestion className="w-4 h-4 text-purple-400" />
@@ -454,8 +494,12 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* TAB 1: CANDIDATE ATTEMPTS */}
-      {activeTab === 'attempts' && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      {activeTab === "attempts" && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
             <div className="glass-card rounded-2xl p-5 flex items-center gap-4">
@@ -463,8 +507,12 @@ export default function AdminDashboardPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Total Candidates</p>
-                <h3 className="text-2xl font-black text-white">{totalAttempts}</h3>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Total Candidates
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  {totalAttempts}
+                </h3>
               </div>
             </div>
 
@@ -473,8 +521,12 @@ export default function AdminDashboardPage() {
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Completed Tests</p>
-                <h3 className="text-2xl font-black text-white">{completedAttempts}</h3>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Completed Tests
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  {completedAttempts}
+                </h3>
               </div>
             </div>
 
@@ -483,9 +535,14 @@ export default function AdminDashboardPage() {
                 <Trophy className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Average Score</p>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Average Score
+                </p>
                 <h3 className="text-2xl font-black text-white">
-                  {avgScore} <span className="text-xs font-medium text-slate-400">/ {totalQuestionCount}</span>
+                  {avgScore}{" "}
+                  <span className="text-xs font-medium text-slate-400">
+                    / {totalQuestionCount}
+                  </span>
                 </h3>
               </div>
             </div>
@@ -495,8 +552,12 @@ export default function AdminDashboardPage() {
                 <Clock className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Avg Duration</p>
-                <h3 className="text-2xl font-black text-white">{formatDuration(avgTimeSeconds)}</h3>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Avg Duration
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  {formatDuration(avgTimeSeconds)}
+                </h3>
               </div>
             </div>
           </div>
@@ -515,7 +576,9 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs text-slate-400 font-bold shrink-0">Sort By:</span>
+              <span className="text-xs text-slate-400 font-bold shrink-0">
+                Sort By:
+              </span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -533,14 +596,20 @@ export default function AdminDashboardPage() {
           {loadingAttempts ? (
             <div className="p-12 text-center text-slate-400 glass-card rounded-3xl">
               <div className="w-8 h-8 border-3 border-indigo-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs font-bold text-slate-300">Loading candidate attempt records...</p>
+              <p className="text-xs font-bold text-slate-300">
+                Loading candidate attempt records...
+              </p>
             </div>
           ) : filteredAttempts.length === 0 ? (
             <div className="glass-card rounded-3xl p-10 text-center">
               <Users className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-              <h3 className="font-bold text-sm text-white mb-1">No Attempt Records Found</h3>
+              <h3 className="font-bold text-sm text-white mb-1">
+                No Attempt Records Found
+              </h3>
               <p className="text-xs text-slate-400">
-                {searchTerm ? 'No candidate names match your query.' : 'No assessment attempts have been completed yet.'}
+                {searchTerm
+                  ? "No candidate names match your query."
+                  : "No assessment attempts have been completed yet."}
               </p>
             </div>
           ) : (
@@ -562,9 +631,14 @@ export default function AdminDashboardPage() {
                     {filteredAttempts.map((attempt) => {
                       const isExpanded = expandedAttemptId === attempt.id;
                       const score = attempt.total_score;
-                      let scoreBadge = 'bg-slate-800 text-slate-300 border-slate-700';
-                      if (score >= totalQuestionCount * 0.8) scoreBadge = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-                      else if (score >= totalQuestionCount * 0.5) scoreBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                      let scoreBadge =
+                        "bg-slate-800 text-slate-300 border-slate-700";
+                      if (score >= totalQuestionCount * 0.8)
+                        scoreBadge =
+                          "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+                      else if (score >= totalQuestionCount * 0.5)
+                        scoreBadge =
+                          "bg-amber-500/20 text-amber-300 border-amber-500/40";
 
                       return (
                         <React.Fragment key={attempt.id}>
@@ -573,7 +647,9 @@ export default function AdminDashboardPage() {
                               {attempt.participant_name}
                             </td>
                             <td className="p-4">
-                              <span className={`px-3 py-1 rounded-xl border text-xs font-extrabold ${scoreBadge}`}>
+                              <span
+                                className={`px-3 py-1 rounded-xl border text-xs font-extrabold ${scoreBadge}`}
+                              >
                                 {score} / {totalQuestionCount}
                               </span>
                             </td>
@@ -587,7 +663,8 @@ export default function AdminDashboardPage() {
                               {attempt.tab_switch_count > 0 ? (
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold">
                                   <ShieldAlert className="w-3.5 h-3.5" />
-                                  {attempt.tab_switch_count} Switch{attempt.tab_switch_count > 1 ? 'es' : ''}
+                                  {attempt.tab_switch_count} Switch
+                                  {attempt.tab_switch_count > 1 ? "es" : ""}
                                 </span>
                               ) : (
                                 <span className="text-emerald-400 text-xs font-bold inline-flex items-center justify-center gap-1">
@@ -598,9 +675,9 @@ export default function AdminDashboardPage() {
                             <td className="p-4">
                               <span
                                 className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${
-                                  attempt.status === 'completed'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  attempt.status === "completed"
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                    : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                                 }`}
                               >
                                 {attempt.status}
@@ -608,11 +685,21 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="p-4 pr-6 text-right space-x-2">
                               <button
-                                onClick={() => setExpandedAttemptId(isExpanded ? null : attempt.id)}
+                                onClick={() =>
+                                  setExpandedAttemptId(
+                                    isExpanded ? null : attempt.id,
+                                  )
+                                }
                                 className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-white/15 text-slate-200 hover:border-cyan-400 font-bold text-xs inline-flex items-center gap-1.5 transition cursor-pointer"
                               >
-                                <span>{isExpanded ? 'Hide Log' : 'Review Log'}</span>
-                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                                <span>
+                                  {isExpanded ? "Hide Log" : "Review Log"}
+                                </span>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-3.5 h-3.5 text-cyan-400" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                )}
                               </button>
 
                               <button
@@ -630,22 +717,26 @@ export default function AdminDashboardPage() {
                             <tr className="bg-slate-950/90 border-b border-white/10">
                               <td colSpan="7" className="p-6">
                                 <h4 className="font-extrabold text-xs text-white mb-4 flex items-center gap-2">
-                                  <span>Question Log for {attempt.participant_name}</span>
+                                  <span>
+                                    Question Log for {attempt.participant_name}
+                                  </span>
                                 </h4>
-                                {attempt.answers && attempt.answers.length > 0 ? (
+                                {attempt.answers &&
+                                attempt.answers.length > 0 ? (
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                                     {attempt.answers.map((ans, idx) => (
                                       <div
                                         key={idx}
                                         className={`p-4 rounded-2xl border text-xs leading-relaxed ${
                                           ans.isCorrect
-                                            ? 'bg-slate-900/90 border-emerald-500/40'
-                                            : 'bg-slate-900/90 border-rose-500/40'
+                                            ? "bg-slate-900/90 border-emerald-500/40"
+                                            : "bg-slate-900/90 border-rose-500/40"
                                         }`}
                                       >
                                         <div className="flex items-start justify-between gap-3 mb-2.5">
                                           <span className="font-bold text-white">
-                                            Q{ans.questionOrder}. {ans.questionText}
+                                            Q{ans.questionOrder}.{" "}
+                                            {ans.questionText}
                                           </span>
                                           {ans.isCorrect ? (
                                             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -656,10 +747,23 @@ export default function AdminDashboardPage() {
 
                                         <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2.5 border-t border-white/10">
                                           <span>
-                                            Selected: <strong className={ans.isCorrect ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{ans.selectedOption || 'Unanswered'}</strong>
+                                            Selected:{" "}
+                                            <strong
+                                              className={
+                                                ans.isCorrect
+                                                  ? "text-emerald-400 font-bold"
+                                                  : "text-rose-400 font-bold"
+                                              }
+                                            >
+                                              {ans.selectedOption ||
+                                                "Unanswered"}
+                                            </strong>
                                           </span>
                                           <span>
-                                            Correct: <strong className="text-emerald-400 font-bold">{ans.correctOption}</strong>
+                                            Correct:{" "}
+                                            <strong className="text-emerald-400 font-bold">
+                                              {ans.correctOption}
+                                            </strong>
                                           </span>
                                           <span className="font-mono text-slate-400">
                                             {ans.timeTakenSeconds}s
@@ -669,7 +773,9 @@ export default function AdminDashboardPage() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <p className="text-xs text-slate-500 italic">No individual question details logged.</p>
+                                  <p className="text-xs text-slate-500 italic">
+                                    No individual question details logged.
+                                  </p>
                                 )}
                               </td>
                             </tr>
@@ -686,14 +792,22 @@ export default function AdminDashboardPage() {
       )}
 
       {/* TAB 2: QUESTION MANAGER (CRUD + IMAGES) */}
-      {activeTab === 'questions' && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      {activeTab === "questions" && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
           {/* Question Stats Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
             <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Total Questions</p>
-                <h3 className="text-2xl font-black text-white">{totalQuestionCount}</h3>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Total Questions
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  {totalQuestionCount}
+                </h3>
               </div>
               <div className="p-3.5 rounded-2xl bg-indigo-500/20 text-cyan-400 border border-indigo-500/30">
                 <FileQuestion className="w-6 h-6" />
@@ -702,7 +816,9 @@ export default function AdminDashboardPage() {
 
             <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">With Images Attached</p>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  With Images Attached
+                </p>
                 <h3 className="text-2xl font-black text-white">
                   {questions.filter((q) => Boolean(q.image_url)).length}
                 </h3>
@@ -714,8 +830,12 @@ export default function AdminDashboardPage() {
 
             <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Format</p>
-                <h3 className="text-2xl font-black text-white">4 Options MCQ</h3>
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Format
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  4 Options MCQ
+                </h3>
               </div>
               <div className="p-3.5 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
                 <Layers className="w-6 h-6" />
@@ -736,7 +856,8 @@ export default function AdminDashboardPage() {
               />
             </div>
             <span className="text-xs text-slate-400 font-bold shrink-0 hidden sm:inline">
-              Showing {filteredQuestions.length} of {totalQuestionCount} questions
+              Showing {filteredQuestions.length} of {totalQuestionCount}{" "}
+              questions
             </span>
           </div>
 
@@ -744,14 +865,20 @@ export default function AdminDashboardPage() {
           {loadingQuestions ? (
             <div className="p-12 text-center text-slate-400 glass-card rounded-3xl">
               <div className="w-8 h-8 border-3 border-indigo-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs font-bold text-slate-300">Loading question bank...</p>
+              <p className="text-xs font-bold text-slate-300">
+                Loading question bank...
+              </p>
             </div>
           ) : filteredQuestions.length === 0 ? (
             <div className="glass-card rounded-3xl p-10 text-center">
               <HelpCircle className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-              <h3 className="font-bold text-sm text-white mb-1">No Questions Found</h3>
+              <h3 className="font-bold text-sm text-white mb-1">
+                No Questions Found
+              </h3>
               <p className="text-xs text-slate-400 mb-5">
-                {qSearchTerm ? 'No questions match your search.' : 'Your question bank is currently empty.'}
+                {qSearchTerm
+                  ? "No questions match your search."
+                  : "Your question bank is currently empty."}
               </p>
               <button
                 onClick={handleOpenAddModal}
@@ -826,31 +953,34 @@ export default function AdminDashboardPage() {
                   {/* 4 Options Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-white/10">
                     {[
-                      { key: 'A', text: q.option_a },
-                      { key: 'B', text: q.option_b },
-                      { key: 'C', text: q.option_c },
-                      { key: 'D', text: q.option_d }
+                      { key: "A", text: q.option_a },
+                      { key: "B", text: q.option_b },
+                      { key: "C", text: q.option_c },
+                      { key: "D", text: q.option_d },
                     ].map((opt) => {
-                      const isCorrect = (q.correct_option || '').toUpperCase() === opt.key;
+                      const isCorrect =
+                        (q.correct_option || "").toUpperCase() === opt.key;
                       return (
                         <div
                           key={opt.key}
                           className={`p-3 rounded-2xl border text-xs flex items-center gap-3 transition-colors ${
                             isCorrect
-                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 font-bold'
-                              : 'bg-slate-950/60 border-white/10 text-slate-300'
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-200 font-bold"
+                              : "bg-slate-950/60 border-white/10 text-slate-300"
                           }`}
                         >
                           <span
                             className={`w-7 h-7 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${
                               isCorrect
-                                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                                : 'bg-slate-900 border border-white/15 text-slate-400'
+                                ? "bg-emerald-500 text-slate-950 font-black shadow-md"
+                                : "bg-slate-900 border border-white/15 text-slate-400"
                             }`}
                           >
                             {opt.key}
                           </span>
-                          <span className="flex-1 leading-snug">{opt.text}</span>
+                          <span className="flex-1 leading-snug">
+                            {opt.text}
+                          </span>
                           {isCorrect && (
                             <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
                               Correct Answer
@@ -885,10 +1015,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-black text-white">
-                      {editingQuestion ? 'Edit Question Details' : 'Add New Question'}
+                      {editingQuestion
+                        ? "Edit Question Details"
+                        : "Add New Question"}
                     </h2>
                     <p className="text-xs text-slate-400 font-medium">
-                      Configure text, multiple choice options, correct key, and image attachments.
+                      Configure text, multiple choice options, correct key, and
+                      image attachments.
                     </p>
                   </div>
                 </div>
@@ -918,7 +1051,12 @@ export default function AdminDashboardPage() {
                       type="number"
                       min="1"
                       value={formData.question_order}
-                      onChange={(e) => setFormData({ ...formData, question_order: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          question_order: parseInt(e.target.value) || 1,
+                        })
+                      }
                       className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-white/15 rounded-2xl text-xs text-white font-bold focus:outline-none focus:border-cyan-400"
                     />
                   </div>
@@ -930,7 +1068,9 @@ export default function AdminDashboardPage() {
                     <input
                       type="text"
                       value={formData.text}
-                      onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, text: e.target.value })
+                      }
                       placeholder="e.g. Which HTML5 tag defines main navigation links?"
                       className="w-full px-4 py-2.5 bg-slate-950/80 border border-white/15 rounded-2xl text-xs text-white font-medium placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                       required
@@ -948,7 +1088,9 @@ export default function AdminDashboardPage() {
                     {formData.image_url && (
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, image_url: '' })}
+                        onClick={() =>
+                          setFormData({ ...formData, image_url: "" })
+                        }
                         className="text-xs font-bold text-rose-400 hover:underline flex items-center gap-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Remove Image
@@ -960,11 +1102,11 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setImageMode('file')}
+                      onClick={() => setImageMode("file")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        imageMode === 'file'
-                          ? 'bg-cyan-500 text-slate-950 font-black'
-                          : 'bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800'
+                        imageMode === "file"
+                          ? "bg-cyan-500 text-slate-950 font-black"
+                          : "bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800"
                       }`}
                     >
                       <Upload className="w-3.5 h-3.5" /> Upload File
@@ -972,11 +1114,11 @@ export default function AdminDashboardPage() {
 
                     <button
                       type="button"
-                      onClick={() => setImageMode('url')}
+                      onClick={() => setImageMode("url")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        imageMode === 'url'
-                          ? 'bg-cyan-500 text-slate-950 font-black'
-                          : 'bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800'
+                        imageMode === "url"
+                          ? "bg-cyan-500 text-slate-950 font-black"
+                          : "bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800"
                       }`}
                     >
                       <LinkIcon className="w-3.5 h-3.5" /> Image URL
@@ -984,11 +1126,11 @@ export default function AdminDashboardPage() {
 
                     <button
                       type="button"
-                      onClick={() => setImageMode('preset')}
+                      onClick={() => setImageMode("preset")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        imageMode === 'preset'
-                          ? 'bg-cyan-500 text-slate-950 font-black'
-                          : 'bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800'
+                        imageMode === "preset"
+                          ? "bg-cyan-500 text-slate-950 font-black"
+                          : "bg-slate-900 text-slate-300 border border-white/15 hover:bg-slate-800"
                       }`}
                     >
                       <Sparkles className="w-3.5 h-3.5" /> Presets
@@ -996,7 +1138,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* Input by File */}
-                  {imageMode === 'file' && (
+                  {imageMode === "file" && (
                     <div className="flex items-center gap-3">
                       <input
                         type="file"
@@ -1013,36 +1155,46 @@ export default function AdminDashboardPage() {
                         <Upload className="w-4 h-4 text-cyan-400" />
                         <span>Choose Image File</span>
                       </button>
-                      <span className="text-[11px] text-slate-400 font-medium">PNG, JPG, WebP (max 5MB)</span>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        PNG, JPG, WebP (max 5MB)
+                      </span>
                     </div>
                   )}
 
                   {/* Input by URL */}
-                  {imageMode === 'url' && (
+                  {imageMode === "url" && (
                     <input
                       type="url"
                       value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, image_url: e.target.value })
+                      }
                       placeholder="Paste image web URL (e.g. https://example.com/diagram.png)"
                       className="w-full px-4 py-2.5 bg-slate-950/80 border border-white/15 rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-medium"
                     />
                   )}
 
                   {/* Input by Presets */}
-                  {imageMode === 'preset' && (
+                  {imageMode === "preset" && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {SAMPLE_PRESET_IMAGES.map((preset, idx) => (
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => setFormData({ ...formData, image_url: preset.url })}
+                          onClick={() =>
+                            setFormData({ ...formData, image_url: preset.url })
+                          }
                           className={`p-2.5 rounded-2xl border text-left flex items-center gap-2.5 text-xs font-bold transition cursor-pointer ${
                             formData.image_url === preset.url
-                              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                              : 'bg-slate-900 border-white/15 text-slate-300 hover:bg-slate-800'
+                              ? "bg-cyan-500/20 border-cyan-400 text-cyan-300"
+                              : "bg-slate-900 border-white/15 text-slate-300 hover:bg-slate-800"
                           }`}
                         >
-                          <img src={preset.url} alt={preset.name} className="w-8 h-8 rounded-xl object-cover" />
+                          <img
+                            src={preset.url}
+                            alt={preset.name}
+                            className="w-8 h-8 rounded-xl object-cover"
+                          />
                           <span className="truncate">{preset.name}</span>
                         </button>
                       ))}
@@ -1056,7 +1208,11 @@ export default function AdminDashboardPage() {
                         src={formData.image_url}
                         alt="Preview"
                         className="max-h-44 w-auto object-contain rounded-xl"
-                        onError={() => setFormError('Failed to load image from provided URL.')}
+                        onError={() =>
+                          setFormError(
+                            "Failed to load image from provided URL.",
+                          )
+                        }
                       />
                     </div>
                   )}
@@ -1065,23 +1221,47 @@ export default function AdminDashboardPage() {
                 {/* 4 Options Inputs */}
                 <div className="space-y-2.5">
                   <label className="block text-[11px] font-black uppercase tracking-wider text-slate-300">
-                    Multiple Choice Options <span className="text-pink-400">*</span>
+                    Multiple Choice Options{" "}
+                    <span className="text-pink-400">*</span>
                   </label>
 
                   {[
-                    { key: 'A', field: 'option_a', color: 'bg-cyan-500 text-slate-950' },
-                    { key: 'B', field: 'option_b', color: 'bg-purple-500 text-white' },
-                    { key: 'C', field: 'option_c', color: 'bg-emerald-500 text-slate-950' },
-                    { key: 'D', field: 'option_d', color: 'bg-amber-500 text-slate-950' }
+                    {
+                      key: "A",
+                      field: "option_a",
+                      color: "bg-cyan-500 text-slate-950",
+                    },
+                    {
+                      key: "B",
+                      field: "option_b",
+                      color: "bg-purple-500 text-white",
+                    },
+                    {
+                      key: "C",
+                      field: "option_c",
+                      color: "bg-emerald-500 text-slate-950",
+                    },
+                    {
+                      key: "D",
+                      field: "option_d",
+                      color: "bg-amber-500 text-slate-950",
+                    },
                   ].map((opt) => (
                     <div key={opt.key} className="flex items-center gap-2.5">
-                      <span className={`w-8 h-8 rounded-2xl ${opt.color} font-black text-xs flex items-center justify-center shrink-0 shadow-md`}>
+                      <span
+                        className={`w-8 h-8 rounded-2xl ${opt.color} font-black text-xs flex items-center justify-center shrink-0 shadow-md`}
+                      >
                         {opt.key}
                       </span>
                       <input
                         type="text"
                         value={formData[opt.field]}
-                        onChange={(e) => setFormData({ ...formData, [opt.field]: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            [opt.field]: e.target.value,
+                          })
+                        }
                         placeholder={`Enter Option ${opt.key}`}
                         className="w-full px-4 py-2.5 bg-slate-950/80 border border-white/15 rounded-2xl text-xs text-white font-medium placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                         required
@@ -1093,25 +1273,30 @@ export default function AdminDashboardPage() {
                 {/* Correct Option Selector */}
                 <div>
                   <label className="block text-[11px] font-black uppercase tracking-wider text-slate-300 mb-2">
-                    Select Correct Answer Key <span className="text-pink-400">*</span>
+                    Select Correct Answer Key{" "}
+                    <span className="text-pink-400">*</span>
                   </label>
 
                   <div className="grid grid-cols-4 gap-2.5">
-                    {['A', 'B', 'C', 'D'].map((key) => {
+                    {["A", "B", "C", "D"].map((key) => {
                       const isSelected = formData.correct_option === key;
                       return (
                         <button
                           key={key}
                           type="button"
-                          onClick={() => setFormData({ ...formData, correct_option: key })}
+                          onClick={() =>
+                            setFormData({ ...formData, correct_option: key })
+                          }
                           className={`py-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
                             isSelected
-                              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30'
-                              : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/15'
+                              ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30"
+                              : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/15"
                           }`}
                         >
                           <span>Option {key}</span>
-                          {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                          {isSelected && (
+                            <Check className="w-4 h-4 stroke-[3]" />
+                          )}
                         </button>
                       );
                     })}
@@ -1137,7 +1322,11 @@ export default function AdminDashboardPage() {
                     ) : (
                       <>
                         <Check className="w-4 h-4 stroke-[3]" />
-                        <span>{editingQuestion ? 'Update Question' : 'Save Question'}</span>
+                        <span>
+                          {editingQuestion
+                            ? "Update Question"
+                            : "Save Question"}
+                        </span>
                       </>
                     )}
                   </button>
@@ -1168,7 +1357,11 @@ export default function AdminDashboardPage() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <img src={previewZoomImage} alt="Zoom Visual" className="max-h-[80vh] w-auto object-contain rounded-2xl" />
+              <img
+                src={previewZoomImage}
+                alt="Zoom Visual"
+                className="max-h-[80vh] w-auto object-contain rounded-2xl"
+              />
             </motion.div>
           </div>
         )}
@@ -1181,9 +1374,12 @@ export default function AdminDashboardPage() {
             <div className="p-3.5 rounded-2xl bg-rose-500/20 text-rose-400 inline-block mb-3 border border-rose-500/40">
               <AlertTriangle className="w-7 h-7" />
             </div>
-            <h3 className="font-black text-lg text-white mb-2">Purge All Candidate Records?</h3>
+            <h3 className="font-black text-lg text-white mb-2">
+              Purge All Candidate Records?
+            </h3>
             <p className="text-xs text-slate-300 mb-6 leading-relaxed font-medium">
-              This action will permanently wipe all candidate attempt records and question logs.
+              This action will permanently wipe all candidate attempt records
+              and question logs.
             </p>
 
             <div className="flex items-center justify-center gap-3">
