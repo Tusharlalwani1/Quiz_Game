@@ -42,6 +42,18 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// Diagnostic endpoint: hit /api/health to see whether the backend is
+// actually connected to a database, and to which one, without guessing
+// from a generic "server unreachable" message.
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: db.isReady,
+    backend: db.backend,
+    isPersistent: db.isPersistent,
+    error: db.error,
+  });
+});
+
 // --- ADMIN JWT MIDDLEWARE ---
 function authenticateAdmin(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -690,8 +702,16 @@ app.get("*", (req, res) => {
   });
 });
 
-await normalizeQuestionOrders();
-await autoSeedIfEmpty();
+// Guard startup work too: if the database isn't reachable/configured, don't
+// let it crash the whole function on cold start (that would take /api/health
+// down with it, along with every other route). Routes that actually touch
+// the database will still return a clear JSON error via their own try/catch.
+try {
+  await normalizeQuestionOrders();
+  await autoSeedIfEmpty();
+} catch (err) {
+  console.error("Startup normalization/seeding skipped due to DB error:", err.message);
+}
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
