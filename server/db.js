@@ -1,14 +1,17 @@
 import { DatabaseSync } from "node:sqlite";
-import { neon } from "@neondatabase/serverless";
+import { Pool } from "@neondatabase/serverless";
 import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING;
 const useNeon = Boolean(databaseUrl);
-const neonSql = useNeon ? neon(databaseUrl) : null;
+const neonPool = useNeon ? new Pool({ connectionString: databaseUrl }) : null;
 const sqliteDb = useNeon
   ? null
   : new DatabaseSync(
@@ -22,7 +25,7 @@ async function query(text, params = []) {
     const before = source.slice(0, offset);
     return `$${(before.match(/\$\d+/g) || []).length + 1}`;
   });
-  return neonSql.query(postgresText, params);
+  return (await neonPool.query(postgresText, params)).rows;
 }
 
 function prepare(text) {
@@ -38,6 +41,10 @@ function prepare(text) {
     run: async (...params) => {
       if (useNeon) {
         const rows = await query(text, params);
+        return { lastInsertRowid: rows[0]?.id, changes: rows.length };
+      }
+      if (/\bRETURNING\b/i.test(text)) {
+        const rows = sqliteDb.prepare(text).all(...params);
         return { lastInsertRowid: rows[0]?.id, changes: rows.length };
       }
       return sqliteDb.prepare(text).run(...params);
