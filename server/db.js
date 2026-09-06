@@ -20,6 +20,31 @@ const isVercel = Boolean(process.env.VERCEL);
 // change on the next deploy/cold start. Instead, fail in a way that is
 // visible and specific, per requirement #6: never silently use temporary
 // Vercel SQLite.
+// Some driver-level failures (especially from @neondatabase/serverless over
+// its websocket transport) throw objects with an empty or missing .message,
+// which made earlier diagnostics show error: "" — useless for debugging.
+// This pulls whatever identifying info actually exists off the thrown value.
+function describeError(err, context) {
+  const bits = [];
+  if (err) {
+    if (err.code) bits.push(`code=${err.code}`);
+    if (err.name && err.name !== "Error") bits.push(err.name);
+    if (err.message) bits.push(err.message);
+  }
+  let detail = bits.join(" | ");
+  if (!detail) {
+    try {
+      detail = JSON.stringify(err, Object.getOwnPropertyNames(err || {}));
+    } catch {
+      detail = String(err);
+    }
+  }
+  if (!detail || detail === "{}") {
+    detail = "Unknown error (the database driver did not provide a message)";
+  }
+  return new Error(`${context}: ${detail}`);
+}
+
 let initError = null;
 let neonPool = null;
 let sqliteDb = null;
@@ -35,9 +60,7 @@ if (isVercel && !useNeon) {
   try {
     neonPool = new Pool({ connectionString: databaseUrl });
   } catch (err) {
-    initError = new Error(
-      `Failed to initialize Neon Postgres connection: ${err.message}`,
-    );
+    initError = describeError(err, "Failed to initialize Neon Postgres connection");
   }
 } else {
   try {
@@ -46,9 +69,7 @@ if (isVercel && !useNeon) {
     );
     sqliteDb.exec("PRAGMA foreign_keys = ON");
   } catch (err) {
-    initError = new Error(
-      `Failed to open local SQLite database: ${err.message}`,
-    );
+    initError = describeError(err, "Failed to open local SQLite database");
   }
 }
 
@@ -62,7 +83,11 @@ async function query(text, params = []) {
     const before = source.slice(0, offset);
     return `$${(before.match(/\$\d+/g) || []).length + 1}`;
   });
-  return (await neonPool.query(postgresText, params)).rows;
+  try {
+    return (await neonPool.query(postgresText, params)).rows;
+  } catch (err) {
+    throw describeError(err, "Neon Postgres query failed");
+  }
 }
 
 function prepare(text) {
@@ -153,8 +178,10 @@ export async function initDB() {
 try {
   await initDB();
 } catch (err) {
-  if (!initError) initError = err;
-  console.error("Database initialization failed:", err.message);
+  if (!initError) {
+    initError = err instanceof Error ? err : describeError(err, "Database initialization failed");
+  }
+  console.error("Database initialization failed:", initError.message);
 }
 
 export default {
