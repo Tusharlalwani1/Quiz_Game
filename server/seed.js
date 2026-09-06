@@ -1,4 +1,4 @@
-import db from './db.js';
+import db from "./db.js";
 
 const sampleQuestions = [
   {
@@ -8,7 +8,7 @@ const sampleQuestions = [
     optionB: "<header>",
     optionC: "<head>",
     optionD: "<section-head>",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 2,
@@ -17,7 +17,7 @@ const sampleQuestions = [
     optionB: "setTimeout callback",
     optionC: "Call Stack execution of standard functions",
     optionD: "requestAnimationFrame",
-    correct: "C"
+    correct: "C",
   },
   {
     order: 3,
@@ -26,7 +26,7 @@ const sampleQuestions = [
     optionB: "align-items",
     optionC: "flex-direction",
     optionD: "align-content",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 4,
@@ -35,7 +35,7 @@ const sampleQuestions = [
     optionB: "useMemo",
     optionC: "useRef",
     optionD: "useCallback",
-    correct: "C"
+    correct: "C",
   },
   {
     order: 5,
@@ -44,7 +44,7 @@ const sampleQuestions = [
     optionB: "HAVING",
     optionC: "ORDER BY",
     optionD: "FILTER",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 6,
@@ -53,7 +53,7 @@ const sampleQuestions = [
     optionB: "204 No Content",
     optionC: "206 Partial Content",
     optionD: "304 Not Modified",
-    correct: "C"
+    correct: "C",
   },
   {
     order: 7,
@@ -62,7 +62,7 @@ const sampleQuestions = [
     optionB: "git checkout -b <name>",
     optionC: "git commit -b <name>",
     optionD: "git switch -c <name>",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 8,
@@ -71,7 +71,7 @@ const sampleQuestions = [
     optionB: "Arithmetic Logic Unit (ALU)",
     optionC: "L3 Cache",
     optionD: "Memory Management Unit (MMU)",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 9,
@@ -80,7 +80,7 @@ const sampleQuestions = [
     optionB: "Self-Attention Mechanism",
     optionC: "Pooling Layer",
     optionD: "Feed-Forward Gate",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 10,
@@ -89,7 +89,7 @@ const sampleQuestions = [
     optionB: "Man-in-the-Middle Attack",
     optionC: "Brute-Force Attack",
     optionD: "SQL Injection",
-    correct: "C"
+    correct: "C",
   },
   {
     order: 11,
@@ -98,7 +98,7 @@ const sampleQuestions = [
     optionB: "O(N)",
     optionC: "O(N²)",
     optionD: "O(2ᴺ)",
-    correct: "C"
+    correct: "C",
   },
   {
     order: 12,
@@ -107,7 +107,7 @@ const sampleQuestions = [
     optionB: "Set",
     optionC: "Dictionary",
     optionD: "Tuple",
-    correct: "D"
+    correct: "D",
   },
   {
     order: 13,
@@ -116,7 +116,7 @@ const sampleQuestions = [
     optionB: "Docker Container",
     optionC: "Virtual Machine",
     optionD: "Serverless Function",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 14,
@@ -125,7 +125,7 @@ const sampleQuestions = [
     optionB: "WebSocket API",
     optionC: "ServiceWorker API",
     optionD: "WebRTC API",
-    correct: "B"
+    correct: "B",
   },
   {
     order: 15,
@@ -134,17 +134,17 @@ const sampleQuestions = [
     optionB: "Grace Hopper",
     optionC: "Ada Lovelace",
     optionD: "Margaret Hamilton",
-    correct: "C"
-  }
+    correct: "C",
+  },
 ];
 
-export function seedDatabase() {
+export async function seedDatabase() {
   console.log("🌱 Seeding 15 MCQ questions into Database...");
-  
+
   // Clear existing dependent records first to respect Foreign Key constraints
-  db.exec("DELETE FROM answers;");
-  db.exec("DELETE FROM attempts;");
-  db.exec("DELETE FROM questions;");
+  await db.exec("DELETE FROM answers;");
+  await db.exec("DELETE FROM attempts;");
+  await db.exec("DELETE FROM questions;");
 
   const insertStmt = db.prepare(`
     INSERT INTO questions (text, option_a, option_b, option_c, option_d, correct_option, question_order)
@@ -152,18 +152,30 @@ export function seedDatabase() {
   `);
 
   for (const q of sampleQuestions) {
-    insertStmt.run(q.text, q.optionA, q.optionB, q.optionC, q.optionD, q.correct, q.order);
+    await insertStmt.run(
+      q.text,
+      q.optionA,
+      q.optionB,
+      q.optionC,
+      q.optionD,
+      q.correct,
+      q.order,
+    );
   }
 
   console.log("✅ Seed completed successfully! 15 questions ready.");
 }
 
-export function autoSeedIfEmpty() {
+export async function autoSeedIfEmpty() {
   try {
-    const row = db.prepare("SELECT COUNT(*) as count FROM questions").get();
+    const row = await db
+      .prepare("SELECT COUNT(*) as count FROM questions")
+      .get();
     if (!row || row.count === 0) {
-      console.log("ℹ️ Questions table is empty. Auto-seeding initial 15 questions...");
-      seedDatabase();
+      console.log(
+        "ℹ️ Questions table is empty. Auto-seeding initial 15 questions...",
+      );
+      await seedDatabase();
     }
   } catch (err) {
     console.error("Error auto-seeding database:", err);
@@ -171,6 +183,6 @@ export function autoSeedIfEmpty() {
 }
 
 // Run direct script execution check
-if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
-  seedDatabase();
+if (process.argv[1] && process.argv[1].endsWith("seed.js")) {
+  await seedDatabase();
 }

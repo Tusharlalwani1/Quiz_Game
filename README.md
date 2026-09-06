@@ -29,34 +29,39 @@ An institutional-grade, full-stack timed MCQ assessment application built for **
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | React 19, Vite, Tailwind CSS, Framer Motion, Lucide Icons, Canvas Confetti |
-| **Backend** | Node.js, Express.js, JSON Web Tokens (JWT) |
-| **Database** | SQLite (using native Node.js `node:sqlite` engine — zero native build dependencies) |
-| **Styling & Assets** | Custom CSS design tokens, APEX IT SOLUTION Brand Assets |
+| Layer                | Technology                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| **Frontend**         | React 19, Vite, Tailwind CSS, Framer Motion, Lucide Icons, Canvas Confetti          |
+| **Backend**          | Node.js, Express.js, JSON Web Tokens (JWT)                                          |
+| **Database**         | SQLite (using native Node.js `node:sqlite` engine — zero native build dependencies) |
+| **Styling & Assets** | Custom CSS design tokens, APEX IT SOLUTION Brand Assets                             |
 
 ---
 
 ## 🚦 Quick Start & Backend Setup
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v18+ recommended)
 - [npm](https://www.npmjs.com/) or `yarn`
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME.git
 cd YOUR_REPOSITORY_NAME
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 3. Setup Environment Variables
+
 Create a `.env` file in the root directory (or rename `.env.example`):
+
 ```env
 # Server Port
 PORT=5000
@@ -71,16 +76,25 @@ ADMIN_PASSWORD=adminSecret2026
 
 # JWT Secret Key
 JWT_SECRET=quiz_app_jwt_secret_key_2026_super_secure
+
+# Neon Postgres connection string (required for Vercel deployment)
+DATABASE_URL=postgresql://...
 ```
 
+For Vercel deployment, create a Neon Postgres database and add its connection string as the `DATABASE_URL` environment variable in the Vercel project settings. The application creates its tables automatically and seeds the default 15 questions only when the questions table is empty. After that, all question changes made by an administrator are stored in Neon and remain available to candidates after restarts and redeployments.
+
 ### 4. Seed Assessment Questions
+
 Populate the SQLite database with the 15 examination questions:
+
 ```bash
 npm run seed
 ```
 
 ### 5. Start Development Server
+
 Run frontend (Vite on port 3000) and backend (Express on port 5000) concurrently:
+
 ```bash
 npm run dev
 ```
@@ -92,10 +106,10 @@ npm run dev
 
 ## 🔑 Default Access Credentials
 
-| User Type | Route | Username | Password | Notes |
-|---|---|---|---|---|
-| **Candidate** | `/` | `quiz2026` | `play123` | Requires entering Full Candidate Name |
-| **Administrator** | `/admin` | `admin` | `adminSecret2026` | Full administrative control |
+| User Type         | Route    | Username   | Password          | Notes                                 |
+| ----------------- | -------- | ---------- | ----------------- | ------------------------------------- |
+| **Candidate**     | `/`      | `quiz2026` | `play123`         | Requires entering Full Candidate Name |
+| **Administrator** | `/admin` | `admin`    | `adminSecret2026` | Full administrative control           |
 
 ---
 
@@ -130,26 +144,32 @@ Quiz Game/
 Follow these steps in your terminal to publish this repository to GitHub:
 
 ### Step 1: Initialize Git Repository
+
 In your project directory:
+
 ```bash
 git init
 git branch -M main
 ```
 
 ### Step 2: Add Files & Commit
+
 ```bash
 git add .
 git commit -m "Initial commit: APEX IT SOLUTION Timed Assessment Engine"
 ```
 
 ### Step 3: Create GitHub Repository
+
 1. Go to [GitHub New Repository](https://github.com/new).
 2. Name your repository (e.g. `apex-it-quiz-game` or `timed-assessment-platform`).
 3. Keep it **Public** or **Private**, and **DO NOT** check "Add a README file", ".gitignore", or "License" (since we already created them).
 4. Click **Create repository**.
 
 ### Step 4: Link Remote & Push
+
 Copy your remote URL from GitHub and run:
+
 ```bash
 git remote add origin https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPOSITORY_NAME.git
 git push -u origin main
@@ -158,4 +178,5 @@ git push -u origin main
 ---
 
 ## 📜 License
+
 This project is created for **APEX IT SOLUTION**. All rights reserved.

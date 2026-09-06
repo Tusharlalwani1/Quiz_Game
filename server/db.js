@@ -1,37 +1,77 @@
 import { DatabaseSync } from "node:sqlite";
+import { neon } from "@neondatabase/serverless";
+import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const databaseUrl = process.env.DATABASE_URL;
+const useNeon = Boolean(databaseUrl);
+const neonSql = useNeon ? neon(databaseUrl) : null;
+const sqliteDb = useNeon
+  ? null
+  : new DatabaseSync(
+      process.env.DATABASE_PATH || path.join(__dirname, "quiz_database.db"),
+    );
 
-const isVercel = Boolean(process.env.VERCEL);
-const dbPath =
-  process.env.DATABASE_PATH ||
-  (isVercel
-    ? path.join("/tmp", "quiz_database.db")
-    : path.join(__dirname, "quiz_database.db"));
+if (sqliteDb) sqliteDb.exec("PRAGMA foreign_keys = ON");
 
-const db = new DatabaseSync(dbPath);
+async function query(text, params = []) {
+  const postgresText = text.replace(/\?/g, (_, offset, source) => {
+    const before = source.slice(0, offset);
+    return `$${(before.match(/\$\d+/g) || []).length + 1}`;
+  });
+  return neonSql.query(postgresText, params);
+}
 
-// Enable foreign keys
-db.exec(`PRAGMA foreign_keys = ON;`);
+function prepare(text) {
+  return {
+    get: async (...params) => {
+      if (useNeon) return (await query(text, params))[0];
+      return sqliteDb.prepare(text).get(...params);
+    },
+    all: async (...params) => {
+      if (useNeon) return query(text, params);
+      return sqliteDb.prepare(text).all(...params);
+    },
+    run: async (...params) => {
+      if (useNeon) {
+        const rows = await query(text, params);
+        return { lastInsertRowid: rows[0]?.id, changes: rows.length };
+      }
+      return sqliteDb.prepare(text).run(...params);
+    },
+  };
+}
 
-// Create tables
-export function initDB() {
-  db.exec(`
+async function exec(text) {
+  if (!useNeon) return sqliteDb.exec(text);
+  for (const statement of text
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)) {
+    await query(statement);
+  }
+}
+
+export async function initDB() {
+  const generatedId = useNeon
+    ? "SERIAL PRIMARY KEY"
+    : "INTEGER PRIMARY KEY AUTOINCREMENT";
+
+  await exec(`
     CREATE TABLE IF NOT EXISTS questions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id ${generatedId},
       text TEXT NOT NULL,
       option_a TEXT NOT NULL,
       option_b TEXT NOT NULL,
       option_c TEXT NOT NULL,
       option_d TEXT NOT NULL,
       correct_option TEXT NOT NULL,
-      question_order INTEGER NOT NULL,
+      question_order INTEGER NOT NULL UNIQUE,
       image_url TEXT
     );
-
     CREATE TABLE IF NOT EXISTS attempts (
       id TEXT PRIMARY KEY,
       participant_name TEXT NOT NULL,
@@ -42,9 +82,8 @@ export function initDB() {
       tab_switch_count INTEGER DEFAULT 0,
       status TEXT DEFAULT 'in_progress'
     );
-
     CREATE TABLE IF NOT EXISTS answers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id ${generatedId},
       attempt_id TEXT NOT NULL,
       question_id INTEGER NOT NULL,
       selected_option TEXT,
@@ -55,14 +94,8 @@ export function initDB() {
       FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
     );
   `);
-
-  try {
-    db.exec(`ALTER TABLE questions ADD COLUMN image_url TEXT;`);
-  } catch (err) {
-    // Column already exists
-  }
 }
 
-initDB();
+await initDB();
 
-export default db;
+export default { prepare, exec, isPersistent: useNeon };

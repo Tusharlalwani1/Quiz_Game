@@ -22,20 +22,20 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "adminSecret2026";
 const JWT_SECRET = process.env.JWT_SECRET || "super_jwt_secret_quiz_app_2026";
 
-function normalizeQuestionOrders() {
-  const questions = db
+async function normalizeQuestionOrders() {
+  const questions = await db
     .prepare("SELECT id FROM questions ORDER BY question_order ASC, id ASC")
     .all();
   const updateOrder = db.prepare(
     "UPDATE questions SET question_order = ? WHERE id = ?",
   );
 
-  questions.forEach((question, index) => {
-    updateOrder.run(-(index + 1), question.id);
-  });
-  questions.forEach((question, index) => {
-    updateOrder.run(index + 1, question.id);
-  });
+  for (const [index, question] of questions.entries()) {
+    await updateOrder.run(-(index + 1), question.id);
+  }
+  for (const [index, question] of questions.entries()) {
+    await updateOrder.run(index + 1, question.id);
+  }
 }
 
 app.use(cors());
@@ -71,7 +71,7 @@ function authenticateAdmin(req, res, next) {
 // --- PARTICIPANT QUIZ ENDPOINTS ---
 
 // 1. Participant Login
-app.post("/api/quiz/login", (req, res) => {
+app.post("/api/quiz/login", async (req, res) => {
   const { username, password, participantName } = req.body;
 
   if (!username.trim() || !password.trim() || !participantName.trim()) {
@@ -96,7 +96,7 @@ app.post("/api/quiz/login", (req, res) => {
       INSERT INTO attempts (id, participant_name, session_id, started_at, status, total_score, tab_switch_count)
       VALUES (?, ?, ?, ?, 'in_progress', 0, 0)
     `);
-    stmt.run(attemptId, cleanName, sessionId, startedAt);
+    await stmt.run(attemptId, cleanName, sessionId, startedAt);
 
     res.json({
       success: true,
@@ -112,18 +112,18 @@ app.post("/api/quiz/login", (req, res) => {
 });
 
 // 2. Fetch Session Progress (Resume support)
-app.get("/api/quiz/session/:sessionId", (req, res) => {
+app.get("/api/quiz/session/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
 
   try {
-    const attempt = db
+    const attempt = await db
       .prepare("SELECT * FROM attempts WHERE session_id = ?")
       .get(sessionId);
     if (!attempt) {
       return res.status(404).json({ error: "Session not found." });
     }
 
-    const answers = db
+    const answers = await db
       .prepare(
         `
       SELECT question_id, selected_option, time_taken_seconds
@@ -144,9 +144,9 @@ app.get("/api/quiz/session/:sessionId", (req, res) => {
 });
 
 // 3. Get Questions (Without correct_option to prevent client cheat)
-app.get("/api/quiz/questions", (req, res) => {
+app.get("/api/quiz/questions", async (req, res) => {
   try {
-    const questions = db
+    const questions = await db
       .prepare(
         `
       SELECT id, text, option_a, option_b, option_c, option_d, question_order, image_url
@@ -177,7 +177,7 @@ app.get("/api/quiz/questions", (req, res) => {
 });
 
 // 4. Save Answer for a Question
-app.post("/api/quiz/answer", (req, res) => {
+app.post("/api/quiz/answer", async (req, res) => {
   const { sessionId, questionId, selectedOption, timeTakenSeconds } = req.body;
 
   if (!sessionId || !questionId) {
@@ -187,7 +187,7 @@ app.post("/api/quiz/answer", (req, res) => {
   }
 
   try {
-    const attempt = db
+    const attempt = await db
       .prepare("SELECT * FROM attempts WHERE session_id = ?")
       .get(sessionId);
     if (!attempt) {
@@ -200,7 +200,7 @@ app.post("/api/quiz/answer", (req, res) => {
         .json({ error: "Quiz has already been completed." });
     }
 
-    const question = db
+    const question = await db
       .prepare("SELECT * FROM questions WHERE id = ?")
       .get(questionId);
     if (!question) {
@@ -216,7 +216,7 @@ app.post("/api/quiz/answer", (req, res) => {
       typeof timeTakenSeconds === "number" ? timeTakenSeconds : 0;
 
     // Check if an answer for this question already exists for this attempt
-    const existing = db
+    const existing = await db
       .prepare(
         "SELECT id FROM answers WHERE attempt_id = ? AND question_id = ?",
       )
@@ -228,7 +228,7 @@ app.post("/api/quiz/answer", (req, res) => {
         SET selected_option = ?, is_correct = ?, answered_at = ?, time_taken_seconds = ?
         WHERE id = ?
       `);
-      updateStmt.run(
+      await updateStmt.run(
         selectedOption || null,
         isCorrect,
         answeredAt,
@@ -240,7 +240,7 @@ app.post("/api/quiz/answer", (req, res) => {
         INSERT INTO answers (attempt_id, question_id, selected_option, is_correct, answered_at, time_taken_seconds)
         VALUES (?, ?, ?, ?, ?, ?)
       `);
-      insertStmt.run(
+      await insertStmt.run(
         attempt.id,
         questionId,
         selectedOption || null,
@@ -251,7 +251,7 @@ app.post("/api/quiz/answer", (req, res) => {
     }
 
     // Recalculate total score
-    const scoreResult = db
+    const scoreResult = await db
       .prepare(
         `
       SELECT SUM(is_correct) as totalScore FROM answers WHERE attempt_id = ?
@@ -260,10 +260,9 @@ app.post("/api/quiz/answer", (req, res) => {
       .get(attempt.id);
 
     const newScore = scoreResult?.totalScore || 0;
-    db.prepare("UPDATE attempts SET total_score = ? WHERE id = ?").run(
-      newScore,
-      attempt.id,
-    );
+    await db
+      .prepare("UPDATE attempts SET total_score = ? WHERE id = ?")
+      .run(newScore, attempt.id);
 
     res.json({ success: true, saved: true });
   } catch (err) {
@@ -273,21 +272,20 @@ app.post("/api/quiz/answer", (req, res) => {
 });
 
 // 5. Track Tab Switch / Blur Warning
-app.post("/api/quiz/tab-switch", (req, res) => {
+app.post("/api/quiz/tab-switch", async (req, res) => {
   const { sessionId } = req.body;
   if (!sessionId)
     return res.status(400).json({ error: "Session ID required." });
 
   try {
-    const attempt = db
+    const attempt = await db
       .prepare("SELECT id, tab_switch_count FROM attempts WHERE session_id = ?")
       .get(sessionId);
     if (attempt) {
       const newCount = attempt.tab_switch_count + 1;
-      db.prepare("UPDATE attempts SET tab_switch_count = ? WHERE id = ?").run(
-        newCount,
-        attempt.id,
-      );
+      await db
+        .prepare("UPDATE attempts SET tab_switch_count = ? WHERE id = ?")
+        .run(newCount, attempt.id);
       return res.json({ success: true, tabSwitchCount: newCount });
     }
     res.status(404).json({ error: "Session not found." });
@@ -298,13 +296,13 @@ app.post("/api/quiz/tab-switch", (req, res) => {
 });
 
 // 6. Complete Quiz
-app.post("/api/quiz/complete", (req, res) => {
+app.post("/api/quiz/complete", async (req, res) => {
   const { sessionId } = req.body;
   if (!sessionId)
     return res.status(400).json({ error: "Session ID required." });
 
   try {
-    const attempt = db
+    const attempt = await db
       .prepare("SELECT * FROM attempts WHERE session_id = ?")
       .get(sessionId);
     if (!attempt) return res.status(404).json({ error: "Session not found." });
@@ -312,7 +310,7 @@ app.post("/api/quiz/complete", (req, res) => {
     const completedAt = new Date().toISOString();
 
     // Final total score recalculation
-    const scoreResult = db
+    const scoreResult = await db
       .prepare(
         `
       SELECT SUM(is_correct) as totalScore FROM answers WHERE attempt_id = ?
@@ -322,13 +320,15 @@ app.post("/api/quiz/complete", (req, res) => {
 
     const finalScore = scoreResult?.totalScore || 0;
 
-    db.prepare(
-      `
+    await db
+      .prepare(
+        `
       UPDATE attempts
       SET status = 'completed', completed_at = ?, total_score = ?
       WHERE id = ?
     `,
-    ).run(completedAt, finalScore, attempt.id);
+      )
+      .run(completedAt, finalScore, attempt.id);
 
     res.json({ success: true, completedAt });
   } catch (err) {
@@ -368,9 +368,9 @@ app.post("/api/admin/login", (req, res) => {
 // --- ADMIN QUESTIONS CRUD ---
 
 // Get all questions
-app.get("/api/admin/questions", authenticateAdmin, (req, res) => {
+app.get("/api/admin/questions", authenticateAdmin, async (req, res) => {
   try {
-    const questions = db
+    const questions = await db
       .prepare(
         `
       SELECT id, text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url
@@ -388,7 +388,7 @@ app.get("/api/admin/questions", authenticateAdmin, (req, res) => {
 });
 
 // Create Question
-app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
+app.post("/api/admin/questions", authenticateAdmin, async (req, res) => {
   const {
     text,
     option_a,
@@ -422,9 +422,9 @@ app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
   }
 
   try {
-    normalizeQuestionOrders();
+    await normalizeQuestionOrders();
     const order = Number(question_order);
-    const questionCount = db
+    const questionCount = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
       .get().count;
     if (!Number.isInteger(order) || order < 1) {
@@ -441,9 +441,10 @@ app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
     const stmt = db.prepare(`
       INSERT INTO questions (text, option_a, option_b, option_c, option_d, correct_option, question_order, image_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
     `);
 
-    const result = stmt.run(
+    const result = await stmt.run(
       text.trim(),
       option_a.trim(),
       option_b.trim(),
@@ -454,7 +455,7 @@ app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
       image_url ? image_url.trim() : null,
     );
 
-    const created = db
+    const created = await db
       .prepare("SELECT * FROM questions WHERE id = ?")
       .get(result.lastInsertRowid);
     res.json({ success: true, question: created });
@@ -465,7 +466,7 @@ app.post("/api/admin/questions", authenticateAdmin, (req, res) => {
 });
 
 // Update Question
-app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
+app.put("/api/admin/questions/:id", authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const {
     text,
@@ -500,7 +501,7 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
   }
 
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT id FROM questions WHERE id = ?")
       .get(id);
     if (!existing) {
@@ -508,7 +509,7 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
     }
 
     let order = parseInt(question_order, 10);
-    const questionCount = db
+    const questionCount = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
       .get().count;
     if (!Number.isInteger(order) || order < 1 || order > questionCount) {
@@ -517,7 +518,7 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
       });
     }
 
-    const duplicate = db
+    const duplicate = await db
       .prepare("SELECT id FROM questions WHERE question_order = ? AND id != ?")
       .get(order, id);
     if (duplicate) {
@@ -532,7 +533,7 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
       WHERE id = ?
     `);
 
-    stmt.run(
+    await stmt.run(
       text.trim(),
       option_a.trim(),
       option_b.trim(),
@@ -544,7 +545,9 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
       id,
     );
 
-    const updated = db.prepare("SELECT * FROM questions WHERE id = ?").get(id);
+    const updated = await db
+      .prepare("SELECT * FROM questions WHERE id = ?")
+      .get(id);
     res.json({ success: true, question: updated });
   } catch (err) {
     console.error("Error updating question:", err);
@@ -553,19 +556,19 @@ app.put("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
 });
 
 // Delete Question
-app.delete("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
+app.delete("/api/admin/questions/:id", authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const existing = db
+    const existing = await db
       .prepare("SELECT id FROM questions WHERE id = ?")
       .get(id);
     if (!existing) {
       return res.status(404).json({ error: "Question not found." });
     }
 
-    db.prepare("DELETE FROM answers WHERE question_id = ?").run(id);
-    db.prepare("DELETE FROM questions WHERE id = ?").run(id);
-    normalizeQuestionOrders();
+    await db.prepare("DELETE FROM answers WHERE question_id = ?").run(id);
+    await db.prepare("DELETE FROM questions WHERE id = ?").run(id);
+    await normalizeQuestionOrders();
 
     res.json({ success: true, deletedId: id });
   } catch (err) {
@@ -575,9 +578,9 @@ app.delete("/api/admin/questions/:id", authenticateAdmin, (req, res) => {
 });
 
 // Admin Get All Quiz Attempts & Details
-app.get("/api/admin/attempts", authenticateAdmin, (req, res) => {
+app.get("/api/admin/attempts", authenticateAdmin, async (req, res) => {
   try {
-    const attempts = db
+    const attempts = await db
       .prepare(
         `
       SELECT id, participant_name, session_id, started_at, completed_at, total_score, tab_switch_count, status
@@ -587,18 +590,19 @@ app.get("/api/admin/attempts", authenticateAdmin, (req, res) => {
       )
       .all();
 
-    const result = attempts.map((attempt) => {
-      // Calculate duration in seconds
-      let durationSeconds = 0;
-      if (attempt.started_at && attempt.completed_at) {
-        const start = new Date(attempt.started_at).getTime();
-        const end = new Date(attempt.completed_at).getTime();
-        durationSeconds = Math.max(0, Math.round((end - start) / 1000));
-      }
+    const result = await Promise.all(
+      attempts.map(async (attempt) => {
+        // Calculate duration in seconds
+        let durationSeconds = 0;
+        if (attempt.started_at && attempt.completed_at) {
+          const start = new Date(attempt.started_at).getTime();
+          const end = new Date(attempt.completed_at).getTime();
+          durationSeconds = Math.max(0, Math.round((end - start) / 1000));
+        }
 
-      const answers = db
-        .prepare(
-          `
+        const answers = await db
+          .prepare(
+            `
         SELECT 
           ans.question_id,
           ans.selected_option,
@@ -613,29 +617,30 @@ app.get("/api/admin/attempts", authenticateAdmin, (req, res) => {
         WHERE ans.attempt_id = ?
         ORDER BY q.question_order ASC
       `,
-        )
-        .all(attempt.id);
+          )
+          .all(attempt.id);
 
-      return {
-        ...attempt,
-        durationSeconds,
-        answers: answers.map((a) => ({
-          questionId: a.question_id,
-          questionOrder: a.question_order,
-          questionText: a.question_text,
-          options: {
-            A: a.option_a,
-            B: a.option_b,
-            C: a.option_c,
-            D: a.option_d,
-          },
-          selectedOption: a.selected_option,
-          correctOption: a.correct_option,
-          isCorrect: Boolean(a.is_correct),
-          timeTakenSeconds: a.time_taken_seconds,
-        })),
-      };
-    });
+        return {
+          ...attempt,
+          durationSeconds,
+          answers: answers.map((a) => ({
+            questionId: a.question_id,
+            questionOrder: a.question_order,
+            questionText: a.question_text,
+            options: {
+              A: a.option_a,
+              B: a.option_b,
+              C: a.option_c,
+              D: a.option_d,
+            },
+            selectedOption: a.selected_option,
+            correctOption: a.correct_option,
+            isCorrect: Boolean(a.is_correct),
+            timeTakenSeconds: a.time_taken_seconds,
+          })),
+        };
+      }),
+    );
 
     res.json({ attempts: result });
   } catch (err) {
@@ -645,10 +650,10 @@ app.get("/api/admin/attempts", authenticateAdmin, (req, res) => {
 });
 
 // Admin Delete Single Attempt
-app.delete("/api/admin/attempts/:id", authenticateAdmin, (req, res) => {
+app.delete("/api/admin/attempts/:id", authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    db.prepare("DELETE FROM attempts WHERE id = ?").run(id);
+    await db.prepare("DELETE FROM attempts WHERE id = ?").run(id);
     res.json({ success: true, deletedId: id });
   } catch (err) {
     console.error("Error deleting attempt:", err);
@@ -657,10 +662,10 @@ app.delete("/api/admin/attempts/:id", authenticateAdmin, (req, res) => {
 });
 
 // Admin Delete All Attempts
-app.delete("/api/admin/attempts-all", authenticateAdmin, (req, res) => {
+app.delete("/api/admin/attempts-all", authenticateAdmin, async (req, res) => {
   try {
-    db.prepare("DELETE FROM answers;").run();
-    db.prepare("DELETE FROM attempts;").run();
+    await db.prepare("DELETE FROM answers;").run();
+    await db.prepare("DELETE FROM attempts;").run();
     res.json({ success: true, message: "All attempts cleared." });
   } catch (err) {
     console.error("Error clearing attempts:", err);
@@ -685,8 +690,8 @@ app.get("*", (req, res) => {
   });
 });
 
-normalizeQuestionOrders();
-autoSeedIfEmpty();
+await normalizeQuestionOrders();
+await autoSeedIfEmpty();
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
