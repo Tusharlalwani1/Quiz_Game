@@ -171,7 +171,7 @@ export async function autoSeedIfEmpty() {
     const row = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
       .get();
-    if (!row || row.count === 0) {
+    if (!row || Number(row.count || 0) === 0) {
       console.log(
         "ℹ️ Questions table is empty. Auto-seeding initial 15 questions...",
       );

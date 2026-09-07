@@ -436,9 +436,10 @@ app.post("/api/admin/questions", authenticateAdmin, async (req, res) => {
   try {
     await normalizeQuestionOrders();
     const order = Number(question_order);
-    const questionCount = await db
+    const countRow = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
-      .get().count;
+      .get();
+    const questionCount = Number(countRow?.count || 0);
     if (!Number.isInteger(order) || order < 1) {
       return res
         .status(400)
@@ -521,9 +522,10 @@ app.put("/api/admin/questions/:id", authenticateAdmin, async (req, res) => {
     }
 
     let order = parseInt(question_order, 10);
-    const questionCount = await db
+    const countRow = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
-      .get().count;
+      .get();
+    const questionCount = Number(countRow?.count || 0);
     if (!Number.isInteger(order) || order < 1 || order > questionCount) {
       return res.status(400).json({
         error: `Order number must be between 1 and ${questionCount}.`,
