@@ -32,7 +32,7 @@ export default function Header() {
             <img
               src="/apex-icon.png"
               alt="APEX"
-              className="h-7 sm:h-8 w-auto object-contain brightness-200"
+              className="h-7 sm:h-8 w-auto object-contain drop-shadow"
             />
           </div>
           <div>
