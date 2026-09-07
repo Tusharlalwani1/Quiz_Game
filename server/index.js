@@ -220,10 +220,14 @@ app.post("/api/quiz/answer", async (req, res) => {
       return res.status(404).json({ error: "Question not found." });
     }
 
-    const isCorrect =
-      selectedOption && selectedOption.toUpperCase() === question.correct_option
-        ? 1
-        : 0;
+    const cleanSelected = selectedOption
+      ? selectedOption.toString().trim().toUpperCase()
+      : null;
+    const cleanCorrect = (question.correct_option || "")
+      .toString()
+      .trim()
+      .toUpperCase();
+    const isCorrect = cleanSelected && cleanSelected === cleanCorrect ? 1 : 0;
     const answeredAt = new Date().toISOString();
     const safeTimeTaken =
       typeof timeTakenSeconds === "number" ? timeTakenSeconds : 0;
@@ -266,13 +270,13 @@ app.post("/api/quiz/answer", async (req, res) => {
     // Recalculate total score
     const scoreResult = await db
       .prepare(
-        `
-      SELECT SUM(is_correct) as totalScore FROM answers WHERE attempt_id = ?
-    `,
+        "SELECT COALESCE(SUM(is_correct), 0) as total_score FROM answers WHERE attempt_id = ?",
       )
       .get(attempt.id);
 
-    const newScore = scoreResult?.totalScore || 0;
+    const newScore = Number(
+      scoreResult?.total_score ?? scoreResult?.totalscore ?? 0,
+    );
     await db
       .prepare("UPDATE attempts SET total_score = ? WHERE id = ?")
       .run(newScore, attempt.id);
@@ -325,13 +329,13 @@ app.post("/api/quiz/complete", async (req, res) => {
     // Final total score recalculation
     const scoreResult = await db
       .prepare(
-        `
-      SELECT SUM(is_correct) as totalScore FROM answers WHERE attempt_id = ?
-    `,
+        "SELECT COALESCE(SUM(is_correct), 0) as total_score FROM answers WHERE attempt_id = ?",
       )
       .get(attempt.id);
 
-    const finalScore = scoreResult?.totalScore || 0;
+    const finalScore = Number(
+      scoreResult?.total_score ?? scoreResult?.totalscore ?? 0,
+    );
 
     await db
       .prepare(
@@ -596,6 +600,8 @@ app.delete("/api/admin/questions/:id", authenticateAdmin, async (req, res) => {
 // Admin Get All Quiz Attempts & Details
 app.get("/api/admin/attempts", authenticateAdmin, async (req, res) => {
   try {
+    await repairAttemptScores();
+
     const attempts = await db
       .prepare(
         `
@@ -710,9 +716,24 @@ app.get("*", (req, res) => {
 // let it crash the whole function on cold start (that would take /api/health
 // down with it, along with every other route). Routes that actually touch
 // the database will still return a clear JSON error via their own try/catch.
+async function repairAttemptScores() {
+  try {
+    await db.exec(`
+      UPDATE attempts
+      SET total_score = COALESCE((
+        SELECT SUM(is_correct) FROM answers WHERE answers.attempt_id = attempts.id
+      ), 0)
+      WHERE total_score = 0;
+    `);
+  } catch (err) {
+    console.error("Score repair error:", err.message);
+  }
+}
+
 try {
   await autoSeedIfEmpty();
   await normalizeQuestionOrders();
+  await repairAttemptScores();
 } catch (err) {
   console.error("Startup normalization/seeding skipped due to DB error:", err.message);
 }
