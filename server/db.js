@@ -77,17 +77,20 @@ function assertReady() {
   if (initError) throw initError;
 }
 
-async function query(text, params = []) {
+async function rawQuery(text, params = []) {
   assertReady();
-  const postgresText = text.replace(/\?/g, (_, offset, source) => {
-    const before = source.slice(0, offset);
-    return `$${(before.match(/\$\d+/g) || []).length + 1}`;
-  });
+  let paramIndex = 1;
+  const postgresText = text.replace(/\?/g, () => `$${paramIndex++}`);
   try {
-    return (await neonPool.query(postgresText, params)).rows;
+    return await neonPool.query(postgresText, params);
   } catch (err) {
     throw describeError(err, "Neon Postgres query failed");
   }
+}
+
+async function query(text, params = []) {
+  const result = await rawQuery(text, params);
+  return result.rows;
 }
 
 function prepare(text) {
@@ -105,8 +108,11 @@ function prepare(text) {
     run: async (...params) => {
       assertReady();
       if (useNeon) {
-        const rows = await query(text, params);
-        return { lastInsertRowid: rows[0]?.id, changes: rows.length };
+        const res = await rawQuery(text, params);
+        return {
+          lastInsertRowid: res.rows[0]?.id,
+          changes: res.rowCount ?? res.rows.length,
+        };
       }
       if (/\bRETURNING\b/i.test(text)) {
         const rows = sqliteDb.prepare(text).all(...params);
@@ -136,6 +142,10 @@ export async function initDB() {
     : "INTEGER PRIMARY KEY AUTOINCREMENT";
 
   await exec(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS questions (
       id ${generatedId},
       text TEXT NOT NULL,

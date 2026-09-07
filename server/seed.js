@@ -166,23 +166,70 @@ export async function seedDatabase() {
   console.log("✅ Seed completed successfully! 15 questions ready.");
 }
 
+let isSeeding = false;
+
 export async function autoSeedIfEmpty() {
+  if (isSeeding) return;
   try {
+    // Check if initial seeding has already occurred
+    try {
+      const setting = await db
+        .prepare("SELECT value FROM app_settings WHERE key = 'has_seeded'")
+        .get();
+      if (setting && setting.value === "true") {
+        return; // Already initialized in the past, respect admin's current state!
+      }
+    } catch {
+      // Table may not be ready if called very early, proceed to count check
+    }
+
     const row = await db
       .prepare("SELECT COUNT(*) as count FROM questions")
       .get();
-    if (!row || Number(row.count || 0) === 0) {
+    const count = Number(row?.count || 0);
+
+    if (count === 0) {
+      isSeeding = true;
       console.log(
         "ℹ️ Questions table is empty. Auto-seeding initial 15 questions...",
       );
       await seedDatabase();
+      try {
+        await db
+          .prepare(
+            "INSERT INTO app_settings (key, value) VALUES ('has_seeded', 'true')",
+          )
+          .run();
+      } catch {
+        // Ignore if already set
+      }
+    } else {
+      // If questions already exist, mark has_seeded so it is never re-seeded
+      try {
+        await db
+          .prepare(
+            "INSERT INTO app_settings (key, value) VALUES ('has_seeded', 'true')",
+          )
+          .run();
+      } catch {
+        // Ignore if already set
+      }
     }
   } catch (err) {
     console.error("Error auto-seeding database:", err);
+  } finally {
+    isSeeding = false;
   }
 }
 
 // Run direct script execution check
 if (process.argv[1] && process.argv[1].endsWith("seed.js")) {
   await seedDatabase();
+  try {
+    await db
+      .prepare(
+        "INSERT INTO app_settings (key, value) VALUES ('has_seeded', 'true')",
+      )
+      .run();
+  } catch {}
 }

@@ -158,6 +158,7 @@ app.get("/api/quiz/session/:sessionId", async (req, res) => {
 // 3. Get Questions (Without correct_option to prevent client cheat)
 app.get("/api/quiz/questions", async (req, res) => {
   try {
+    await autoSeedIfEmpty();
     const questions = await db
       .prepare(
         `
@@ -382,6 +383,7 @@ app.post("/api/admin/login", (req, res) => {
 // Get all questions
 app.get("/api/admin/questions", authenticateAdmin, async (req, res) => {
   try {
+    await autoSeedIfEmpty();
     const questions = await db
       .prepare(
         `
@@ -709,8 +711,8 @@ app.get("*", (req, res) => {
 // down with it, along with every other route). Routes that actually touch
 // the database will still return a clear JSON error via their own try/catch.
 try {
-  await normalizeQuestionOrders();
   await autoSeedIfEmpty();
+  await normalizeQuestionOrders();
 } catch (err) {
   console.error("Startup normalization/seeding skipped due to DB error:", err.message);
 }
