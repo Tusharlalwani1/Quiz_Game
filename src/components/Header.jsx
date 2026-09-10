@@ -1,5 +1,4 @@
-import React from 'react';
-import { Volume2, VolumeX, Shield, User, Sparkles, LogOut, Flame } from 'lucide-react';
+import { Volume2, VolumeX, User, LogOut } from 'lucide-react';
 import { useSound } from '../context/SoundContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -26,24 +25,15 @@ export default function Header() {
             playClick();
             navigate('/');
           }}
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center cursor-pointer group"
+          title="APEX IT SOLUTION"
         >
-          <div className="relative p-1.5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-200">
+          <div className="bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center shadow-md group-hover:opacity-95 transition-all">
             <img
-              src="/apex-icon.png"
-              alt="APEX"
-              className="h-7 sm:h-8 w-auto object-contain drop-shadow"
+              src="/apex-logo.png"
+              alt="APEX IT SOLUTION - WHERE VISION MEETS DESIGN"
+              className="h-7 sm:h-8 w-auto object-contain"
             />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg font-black tracking-tight text-white group-hover:text-cyan-300 transition-colors">
-                APEX <span className="gradient-text-fun">QUIZ RUN</span>
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-500/20 to-purple-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-[10px] font-black uppercase tracking-wider">
-                <Flame className="w-3 h-3 text-fuchsia-400" /> LIVE
-              </span>
-            </div>
           </div>
         </div>
 

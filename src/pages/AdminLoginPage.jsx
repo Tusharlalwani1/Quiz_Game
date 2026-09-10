@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Shield, Key, User, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Lock, Shield, Key, User, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 
@@ -58,19 +58,25 @@ export default function AdminLoginPage() {
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
 
         <div className="mb-7 pb-5 border-b border-white/10 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-3 mb-3">
-            <div className="p-2.5 rounded-2xl bg-purple-600/30 border border-purple-400/40 text-purple-300 shadow-md">
-              <Shield className="w-6 h-6" />
+          <div className="flex items-center justify-center sm:justify-start mb-4">
+            <div className="bg-white px-3.5 py-1.5 rounded-xl shadow-md inline-flex items-center">
+              <img
+                src="/apex-logo.png"
+                alt="APEX IT SOLUTION"
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
             </div>
-            <span className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" /> RESTRICTED ACCESS
+          </div>
+          <div className="flex items-center justify-center sm:justify-start gap-3 mb-3">
+            <span className="px-3 py-1 rounded-full bg-slate-900/90 border border-white/15 text-slate-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-slate-300" /> RESTRICTED ACCESS
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Admin <span className="gradient-text-fun">Dashboard Login</span>
+            Administrator Portal
           </h1>
           <p className="text-slate-400 text-xs mt-1.5 leading-relaxed font-medium">
-            Authorized management credentials for exam control and question bank CRUD.
+            Authorized management credentials for exam control and question bank.
           </p>
         </div>
 
